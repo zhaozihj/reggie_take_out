@@ -101,20 +101,16 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
         //这个update是根据id修改
         this.updateById(dishDto);
 
-        //删除原本口味表中的记录
-        LambdaQueryWrapper<DishFlavor> lambdaQueryWrapper=new LambdaQueryWrapper<DishFlavor>();
-        lambdaQueryWrapper.eq(DishFlavor::getDishId,dishDto.getId());
-        dishFlavorService.remove(lambdaQueryWrapper);
-
-       Long Dishid=dishDto.getId();
-        //这个flavors中的DishFlavor中的dishid都没有被赋值
+        Long id=dishDto.getId();
         List<DishFlavor> flavors = dishDto.getFlavors();
         for (DishFlavor flavor : flavors) {
-            flavor.setDishId(Dishid);
+            flavor.setDishId(id);
         }
+        LambdaQueryWrapper<DishFlavor> lambdaQueryWrapper=new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(DishFlavor::getDishId,dishDto.getId());
+        dishFlavorService.update(lambdaQueryWrapper);
 
-        //批量对flavor表中进行插入
-        dishFlavorService.saveBatch(flavors);
+
 
     }
 

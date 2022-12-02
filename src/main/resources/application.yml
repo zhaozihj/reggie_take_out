@@ -1,0 +1,36 @@
+#tomacat端口号
+server:
+  port: 8080
+spring:
+  #应用的名称，不必须
+  application:
+    name: reggie_take_out
+    #配置数据源为druid
+  datasource:
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/reggle?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+      username: root
+      password: root
+   #设置文件上传时最大的单个文件大小，和最大的全部文件大小
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB
+
+
+mybatis-plus:
+  configuration:
+    #在映射实体或者属性时，将数据库中表名和字段名中的下划线去掉，按照驼峰命名法映射
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: ASSIGN_ID
+
+reggie:
+  basePath: D:\img1\
+
+
+
+

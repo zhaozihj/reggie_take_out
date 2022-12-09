@@ -15,6 +15,8 @@ import com.itheima.reggie.service.SetmealService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,6 +43,8 @@ public class SetmealController {
     @PostMapping
     @Transactional
 //多个事务要进行事务管理
+    //如果新插入了一个套餐，那么之前的所有套餐缓存也就是所有setmealCache中的缓存都会被删除
+    @CacheEvict(value="setmealCache",allEntries = true)
     public R<String> insert(@RequestBody SetmealDto setmealDto){
 
         setmealService.saveWithDish(setmealDto);
@@ -87,8 +91,10 @@ public class SetmealController {
     }
 
     @DeleteMapping
+    //当一个套餐被删除之后，setmealCache中也就是所有套餐的缓存都会被删除
+    @CacheEvict(value="setmealCache",allEntries = true)
     @Transactional
-    public R<String> delete(Long ids[]){
+        public R<String> delete(Long ids[]){
 
         //删除操作
         setmealService.deleteWithDish(ids);
@@ -108,7 +114,10 @@ public class SetmealController {
         return R.success("修改成功");
     }
 
+
     @GetMapping("/list")
+    //#setmeal拿到方法中传递的参数,然后这个key也是用setmeal.categoryId来做的，根据套餐分类缓存
+    @Cacheable(value="setmealCache",key="#setmeal.categoryId+'_'+#setmeal.status")
     public R<List<Setmeal>> list (Setmeal setmeal) {
 
         LambdaQueryWrapper<Setmeal> lambdaQueryWrapper = new LambdaQueryWrapper<>();

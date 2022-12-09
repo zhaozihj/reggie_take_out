@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -105,6 +106,77 @@ public class DishController {
         return R.success("修改成功");
     }
 
+    /*
+删除对应的信息
+ */
+    @DeleteMapping
+    @Transactional
+    public R<String> delete( Long ids[]){
+
+        dishService.delete(ids);
+        return R.success("删除成功了");
+    }
+
+    /*
+改变商品功能的信息
+ */
+    @PostMapping("/status/{status}")
+    public R<String> editStatus(Long ids[],@PathVariable int status){
+
+        for (Long id : ids) {
+            //创建一个菜品对象,并把获得的id赋值给这个对象
+            Dish dish = new Dish();
+            dish.setId(id);
+
+            //将获取的id存放在dish对象中，并且设置status为传递的参数
+            dish.setStatus(status);
+
+            //对status进行修改，创建时间和创建人什么的只写都是写过自动的
+            dishService.updateById(dish);
+
+        }
+        return R.success("修改成功");
+    }
 
 
+
+    /*
+    这个功能是在套餐管理添加的页面中，查询每一种菜品类型所对应的全部具体的菜品
+ */
+    //用dish来接受catogoryId
+    @GetMapping("/list")
+    public R<List<DishDto>> list(Dish dish){
+
+        LambdaQueryWrapper<Dish> lambdaQueryWrapper=new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(dish.getCategoryId()!=null,Dish::getCategoryId,dish.getCategoryId());
+        //查询status为1的菜品，就是正在起售的菜品
+        lambdaQueryWrapper.eq(Dish::getStatus,1);
+
+        //添加排序条件
+        lambdaQueryWrapper.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
+        List<Dish> list = dishService.list(lambdaQueryWrapper);
+        List<DishDto> listDto=new ArrayList<>();
+        for (Dish dish1 : list) {
+            Long categoryId = dish1.getCategoryId();
+            Category category = categoryService.getById(categoryId);
+            DishDto dishDto1=new DishDto();
+            if(category!=null) {
+                String categoryName = category.getName();
+                dishDto1.setCategoryName(categoryName);
+            }
+
+            //通过具体菜品的id，查出它的口味
+            Long dishId=dish1.getId();
+            LambdaQueryWrapper<DishFlavor> lambdaQueryWrapper1=new LambdaQueryWrapper<>();
+            lambdaQueryWrapper1.eq(DishFlavor::getDishId,dishId);
+            List<DishFlavor> dishFlavorList=dishFlavorService.list(lambdaQueryWrapper1);
+            dishDto1.setFlavors(dishFlavorList);
+
+
+            BeanUtils.copyProperties(dish1,dishDto1);
+            listDto.add(dishDto1);
+        }
+
+        return R.success(listDto);
+    }
 }

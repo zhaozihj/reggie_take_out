@@ -6,6 +6,7 @@ import com.itheima.reggie.common.BaseContext;
 import com.itheima.reggie.common.R;
 import javafx.beans.binding.LongExpression;
 import lombok.extern.slf4j.Slf4j;
+import org.omg.CORBA.UserException;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -23,14 +24,20 @@ public class LoginInterceptor implements HandlerInterceptor {
         HttpSession session = request.getSession();
         //获取session中employee
         Long employee = (Long) session.getAttribute("employee");
-        //把id放到ThreadLocal中
-        BaseContext.setCurrentId(employee);
 
-        //employee不为空就是登陆了放行
+        Long user=(Long) session.getAttribute("user");
         if(employee!=null){
+            //把id放到ThreadLocal
+            BaseContext.setCurrentId(employee);
             //放行
             return true;
         }
+
+        if(user!=null){
+            BaseContext.setCurrentId(user);
+            return true;
+        }
+
         //如果未登录返回未登录结果，通过输出流方式向客户端页面响应数据
         response.getWriter().write(JSON.toJSONString(R.error("NOTLOGIN")));
         return false;

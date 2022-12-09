@@ -29,7 +29,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         log.info("拦截器加载成功");
         registry.addInterceptor(new LoginInterceptor())
                 .addPathPatterns("/**")  //所有请求都被拦截包括静态资源
-                .excludePathPatterns("/employee/login","/backend/**","/front/**"); //放行的请求
+                .excludePathPatterns("/employee/login","/backend/**","/front/**","/user/sendMsg","/user/login"); //放行的请求
     }
 
     //配置静态资源的映射

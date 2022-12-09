@@ -15,4 +15,7 @@ public interface DishService extends IService<Dish> {
 
     //查找要修改的记录的数据显示到修改页面上
     public DishDto get(Long id);
+
+    //删除记录
+    public  void delete(Long ids[]);
 }

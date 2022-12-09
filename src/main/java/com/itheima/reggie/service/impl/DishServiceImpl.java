@@ -3,6 +3,7 @@ package com.itheima.reggie.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.itheima.reggie.common.CustomerException;
 import com.itheima.reggie.dto.DishDto;
 import com.itheima.reggie.entity.Category;
 import com.itheima.reggie.entity.Dish;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -101,22 +103,51 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
         //这个update是根据id修改
         this.updateById(dishDto);
 
-        //删除原本口味表中的记录
-        LambdaQueryWrapper<DishFlavor> lambdaQueryWrapper=new LambdaQueryWrapper<DishFlavor>();
-        lambdaQueryWrapper.eq(DishFlavor::getDishId,dishDto.getId());
-        dishFlavorService.remove(lambdaQueryWrapper);
-
-       Long Dishid=dishDto.getId();
-        //这个flavors中的DishFlavor中的dishid都没有被赋值
+        Long id=dishDto.getId();
         List<DishFlavor> flavors = dishDto.getFlavors();
         for (DishFlavor flavor : flavors) {
-            flavor.setDishId(Dishid);
+            flavor.setDishId(id);
         }
+        LambdaQueryWrapper<DishFlavor> lambdaQueryWrapper=new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(DishFlavor::getDishId,dishDto.getId());
+        dishFlavorService.update(lambdaQueryWrapper);
 
-        //批量对flavor表中进行插入
-        dishFlavorService.saveBatch(flavors);
+
 
     }
+
+    //删除记录
+    @Override
+    public void delete(Long[] ids) {
+        //查询套餐状态，确定是否真的要删除
+        //条件构造器中的条件是指套餐id在这些参数里面，套餐的状态还是可用状态的
+        //就是可用状态的套餐是不能够随便删除的
+        LambdaQueryWrapper<Dish> lambdaQueryWrapper1=new LambdaQueryWrapper<>();
+        lambdaQueryWrapper1.in(Dish::getId,ids);
+        lambdaQueryWrapper1.eq(Dish::getStatus,1);
+
+        //返回符合这个条件构造器的记录的个数
+        int count=this.count(lambdaQueryWrapper1);
+        if(count>0){
+            throw new CustomerException("套餐正在售卖中，不能删除");
+        }
+
+
+
+        //删除dish表中数据
+        //这里removeByIds只能用集合来删除，但接收参数只能用数组
+        List<Long> list = Arrays.asList(ids);
+        dishService.removeByIds(list);
+
+        //删除dishflavor表中的数据
+        for (Long id : ids) {
+            LambdaQueryWrapper<DishFlavor> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+            lambdaQueryWrapper.eq(DishFlavor::getDishId,id);
+            dishFlavorService.remove(lambdaQueryWrapper);
+        }
+    }
+
+
 
 
 }

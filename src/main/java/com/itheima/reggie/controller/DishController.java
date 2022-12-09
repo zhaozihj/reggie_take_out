@@ -15,11 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RestController
@@ -30,6 +32,8 @@ public class DishController {
     @Autowired
     private DishService dishService;
 
+     @Autowired
+     private RedisTemplate redisTemplate;
 
     @Autowired
     private CategoryService categoryService;
@@ -42,7 +46,17 @@ public class DishController {
     public R<String> save( @RequestBody DishDto dishDto){
         //这个save里除了是Dish类是Dish类的子类也是可以的
         //dishService.save(dishDto);
-         dishService.saveWithDishFlavor(dishDto);
+        dishService.saveWithDishFlavor(dishDto);
+
+        //清理所有菜品的缓存数据
+        //Set keys=redisTemplate.keys("dish_*");
+        //redisTemplate.delete(keys);
+
+        //清理某个分类下面的菜品缓存数据
+        //菜品的status都是1所以这里写_1就可以
+        String key ="dish_"+dishDto.getCategoryId()+"_1";
+        redisTemplate.delete(key);
+
          return R.success("保存成功");
 
 
@@ -88,27 +102,37 @@ public class DishController {
     }
 
     /*
-    再修改页面上获取原本的参数值
+    再修改页面上获取原本的菜品信息
      */
     @GetMapping("/{id}")
     public R<DishDto> edit(@PathVariable long id){
-       DishDto dishDto=dishService.get(id);
+        DishDto dishDto = dishService.get(id);
+
         return R.success(dishDto);
 
     }
-
     /*
     提交修改之后的数据
      */
     @PutMapping
     public R<String> editPlus( @RequestBody DishDto dishDto){
         dishService.updateWithDishFlavor(dishDto);
+
+        //清理所有菜品的缓存数据
+        //Set keys=redisTemplate.keys("dish_*");
+        //redisTemplate.delete(keys);
+
+        //清理某个分类下面的菜品缓存数据
+        //菜品的status都是1所以这里写_1就可以
+        String key ="dish_"+dishDto.getCategoryId()+"_1";
+        redisTemplate.delete(key);
         return R.success("修改成功");
     }
 
+
     /*
-删除对应的信息
- */
+    删除对应的信息
+     */
     @DeleteMapping
     @Transactional
     public R<String> delete( Long ids[]){
@@ -118,8 +142,8 @@ public class DishController {
     }
 
     /*
-改变商品功能的信息
- */
+    改变商品功能的信息
+     */
     @PostMapping("/status/{status}")
     public R<String> editStatus(Long ids[],@PathVariable int status){
 
@@ -139,13 +163,31 @@ public class DishController {
     }
 
 
-
     /*
     这个功能是在套餐管理添加的页面中，查询每一种菜品类型所对应的全部具体的菜品
  */
     //用dish来接受catogoryId
     @GetMapping("/list")
     public R<List<DishDto>> list(Dish dish){
+
+        List<DishDto> listDto=null;
+
+        //每一个分类对应一个key
+        //动态的构造一个key
+        String key="dish_"+dish.getCategoryId()+"_"+dish.getStatus();
+
+        //查询redis
+        listDto = (List<DishDto>) redisTemplate.opsForValue().get(key);
+
+
+        //如果存在则直接返回
+        if(listDto!=null){
+            //如果存在，直接返回，无需查询数据库
+            return R.success(listDto);
+        }
+
+
+
 
         LambdaQueryWrapper<Dish> lambdaQueryWrapper=new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(dish.getCategoryId()!=null,Dish::getCategoryId,dish.getCategoryId());
@@ -155,7 +197,7 @@ public class DishController {
         //添加排序条件
         lambdaQueryWrapper.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
         List<Dish> list = dishService.list(lambdaQueryWrapper);
-        List<DishDto> listDto=new ArrayList<>();
+        listDto=new ArrayList<>();
         for (Dish dish1 : list) {
             Long categoryId = dish1.getCategoryId();
             Category category = categoryService.getById(categoryId);
@@ -176,6 +218,10 @@ public class DishController {
             BeanUtils.copyProperties(dish1,dishDto1);
             listDto.add(dishDto1);
         }
+
+        //如果不存在则查询数据库，再把查询出来的加入缓存
+        //设置缓存的有效时间
+        redisTemplate.opsForValue().set(key,listDto,60, TimeUnit.MINUTES);
 
         return R.success(listDto);
     }

@@ -56,10 +56,9 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
 
     }
 
-
     /*
-    获取要修改的菜品的信息
-     */
+       获取要修改的菜品的信息
+        */
     @Override
     public DishDto get(Long id) {
         //获取菜品对象
@@ -98,21 +97,25 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     //既要对dish表进行修改，也要对dishFlavor表进行修改
     public void updateWithDishFlavor(  DishDto dishDto){
 
-       //把dish表先修改了
+        //把dish表先修改了
         //dishDto是Dish的子类的对象，也可以进行修改
         //这个update是根据id修改
         this.updateById(dishDto);
 
-        Long id=dishDto.getId();
+        //删除原本口味表中的记录
+        LambdaQueryWrapper<DishFlavor> lambdaQueryWrapper=new LambdaQueryWrapper<DishFlavor>();
+        lambdaQueryWrapper.eq(DishFlavor::getDishId,dishDto.getId());
+        dishFlavorService.remove(lambdaQueryWrapper);
+
+        Long Dishid=dishDto.getId();
+        //这个flavors中的DishFlavor中的dishid都没有被赋值
         List<DishFlavor> flavors = dishDto.getFlavors();
         for (DishFlavor flavor : flavors) {
-            flavor.setDishId(id);
+            flavor.setDishId(Dishid);
         }
-        LambdaQueryWrapper<DishFlavor> lambdaQueryWrapper=new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(DishFlavor::getDishId,dishDto.getId());
-        dishFlavorService.update(lambdaQueryWrapper);
 
-
+        //批量对flavor表中进行插入
+        dishFlavorService.saveBatch(flavors);
 
     }
 

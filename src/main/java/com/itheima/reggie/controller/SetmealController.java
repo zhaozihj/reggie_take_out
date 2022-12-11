@@ -17,6 +17,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -129,5 +130,39 @@ public class SetmealController {
         return R.success(list);
 
     }
+
+    //点击修改后获取套餐信息
+    @GetMapping("/{id}")
+    public R<SetmealDto> edit(@PathVariable Long id){
+
+        Setmeal setmeal = setmealService.getById(id);
+        SetmealDto setmealDto=new SetmealDto();
+        BeanUtils.copyProperties(setmeal,setmealDto);
+
+        LambdaQueryWrapper<SetmealDish> lambdaUpdateWrapper=new LambdaQueryWrapper<>();
+        lambdaUpdateWrapper.eq(SetmealDish::getSetmealId,id);
+        List<SetmealDish> setmealDishes = setmealDishService.list(lambdaUpdateWrapper);
+        setmealDto.setSetmealDishes(setmealDishes);
+
+        return R.success(setmealDto);
+
+    }
+
+    @PutMapping
+    public R<String> editPlus(@RequestBody SetmealDto setmealDto){
+
+        setmealService.updateById(setmealDto);
+
+        List<SetmealDish> setmealDishes = setmealDto.getSetmealDishes();
+
+        //这个setmealDishes没有setmealId，所以要自己设置
+        Long setmealId=setmealDto.getId();
+        for (SetmealDish setmealDish : setmealDishes) {
+            setmealDish.setSetmealId(setmealId);
+        }
+        setmealDishService.saveBatch(setmealDishes);
+        return R.success("修改成功");
+    }
+
 
 }

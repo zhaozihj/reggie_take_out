@@ -7,10 +7,11 @@ spring:
     name: reggie_take_out
     #配置数据源为druid
    #Redis配置
+    #linux的redis的host不同password不同
   redis:
-    host: localhost
+    host: 39.105.5.187
     port: 6379
-    password:
+    password: zhao1129
     database: 0
   cache:
     redis:
@@ -19,9 +20,11 @@ spring:
   datasource:
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://localhost:3306/reggle?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+      #linux的ip修改
+      url: jdbc:mysql://39.105.5.187:3306/reggle?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
       username: root
-      password: root
+      #linux的数据库密码修改
+      password: zhao1129
    #设置文件上传时最大的单个文件大小，和最大的全部文件大小
   servlet:
     multipart:
@@ -39,7 +42,8 @@ mybatis-plus:
       id-type: ASSIGN_ID
 
 reggie:
-  basePath: D:\img1\
+  #linux的图片路径
+  basePath: /reggie/reggieapp/img/
 
 
 

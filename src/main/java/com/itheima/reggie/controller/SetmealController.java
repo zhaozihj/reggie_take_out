@@ -12,6 +12,10 @@ import com.itheima.reggie.entity.SetmealDish;
 import com.itheima.reggie.service.CategoryService;
 import com.itheima.reggie.service.SetmealDishService;
 import com.itheima.reggie.service.SetmealService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +31,11 @@ import java.util.List;
 /*
 套餐管理
  */
+@Api(tags="套餐相关接口")
 @RestController
 @Slf4j
 @RequestMapping("/setmeal")
+
 public class SetmealController {
 
     @Autowired
@@ -46,6 +52,7 @@ public class SetmealController {
 //多个事务要进行事务管理
     //如果新插入了一个套餐，那么之前的所有套餐缓存也就是所有setmealCache中的缓存都会被删除
     @CacheEvict(value="setmealCache",allEntries = true)
+
     public R<String> insert(@RequestBody SetmealDto setmealDto){
 
         setmealService.saveWithDish(setmealDto);
@@ -54,6 +61,13 @@ public class SetmealController {
 
     //分页查询功能的实现
     //这个和之前那个菜品类型管理的分页查询功能类似
+    @ApiOperation("套餐分页查询接口")
+    @ApiImplicitParams({
+            //name中的page和方法参数中page名字相同，value是说明作用，required说明这个参数是否必须
+            @ApiImplicitParam(name="page",value="页码",required = true),
+            @ApiImplicitParam(name="pageSize",value="每页记录数",required = true),
+            @ApiImplicitParam(name="name",value="套餐名称",required = false)
+    })
     @GetMapping("/page")
     public R<Page> page(int page, int pageSize, String name){
 
